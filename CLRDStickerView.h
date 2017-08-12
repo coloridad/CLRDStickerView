@@ -28,7 +28,11 @@
 
 @protocol CLRDStickerViewDelegate <NSObject>
 
-- (void)stickerView:(CLRDStickerView *)stickerView eventDetected:(NSString *)event;
+@optional
+- (void)stickerView:(CLRDStickerView *)stickerView changeBeganForSticker:(CLRDSticker *)sticker;
+- (void)stickerView:(CLRDStickerView *)stickerView changeEndedForSticker:(CLRDSticker *)sticker;
+- (void)stickerView:(CLRDStickerView *)stickerView eligibilityBeganFor:(NSString *)event forSticker:(CLRDSticker *)sticker;
+- (void)stickerView:(CLRDStickerView *)stickerView eligibilityEndedFor:(NSString *)event forSticker:(CLRDSticker *)sticker;
 
 @end
 
@@ -36,8 +40,10 @@
 @property id <CLRDStickerViewDelegate> delegate;
 
 - (void)addSticker:(CLRDSticker *)sticker;
+- (void)addSticker:(CLRDSticker *)sticker withFrame:(CGRect)frame;
 - (void)removeSticker:(CLRDSticker *)sticker;
 
 - (void)setFrame:(CGRect)frame forEvent:(NSString *)event;
+- (BOOL)frameIntersects:(CGRect)frame withFrameForEvent:(NSString *)event;
 - (void)removeFrameForEvent:(NSString *)event;
 @end

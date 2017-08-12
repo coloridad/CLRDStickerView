@@ -46,5 +46,6 @@
 
 - (void)commonInit {
     _referenceTransform = CGAffineTransformIdentity;
+    _associatedEvents = [NSMutableSet set];
 }
 @end

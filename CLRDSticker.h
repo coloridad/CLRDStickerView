@@ -24,4 +24,5 @@
 
 @interface CLRDSticker : UIImageView
 @property CGAffineTransform referenceTransform;
+@property NSMutableSet<NSString *> *associatedEvents;
 @end

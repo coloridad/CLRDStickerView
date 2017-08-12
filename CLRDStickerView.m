@@ -66,6 +66,17 @@
 
 - (void)addSticker:(CLRDSticker *)sticker {
     
+    CGRect adjustedCenter = CGRectMake(self.center.x - (sticker.frame.size.width / 2),
+                                       self.center.y - (sticker.frame.size.height / 2),
+                                       sticker.frame.size.width,
+                                       sticker.frame.size.height);
+    
+    [self addSticker:sticker withFrame:adjustedCenter];
+    
+}
+
+- (void)addSticker:(CLRDSticker *)sticker withFrame:(CGRect)frame {
+
     UIPanGestureRecognizer *panRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handleGesture:)];
     [panRecognizer setDelegate:self];
     [sticker addGestureRecognizer:panRecognizer];
@@ -80,7 +91,7 @@
     
     sticker.userInteractionEnabled = YES;
     [self addSubview:sticker];
-    
+
 }
 
 - (void)removeSticker:(CLRDSticker *)sticker {
@@ -110,12 +121,21 @@
             
             [_activeGestureRecognizers addObject:recognizer];
             
+            if (self.delegate != nil && [self.delegate respondsToSelector:@selector(stickerView:changeBeganForSticker:)] == YES) {
+                [self.delegate stickerView:self changeBeganForSticker:targetSticker];
+            }
+            
             break;
         }
             
         case UIGestureRecognizerStateEnded: {
             targetSticker.referenceTransform = [self applyRecognizer:recognizer toTransform:targetSticker.referenceTransform];
             [_activeGestureRecognizers removeObject:recognizer];
+            
+            if (self.delegate != nil && [self.delegate respondsToSelector:@selector(stickerView:changeEndedForSticker:)] == YES) {
+                [self.delegate stickerView:self changeEndedForSticker:targetSticker];
+            }
+
             break;
         }
             
@@ -137,9 +157,22 @@
     for (NSString *event in _eventDictionary.allKeys) {
         CGRect frame = [_eventDictionary objectForKey:event].CGRectValue;
         
-        if (CGRectIntersectsRect(frame, targetSticker.frame) == YES) {
-            if (self.delegate != nil && [self.delegate respondsToSelector:@selector(stickerView:eventDetected:)]) {
-                [self.delegate stickerView:self eventDetected:event];
+        BOOL eventDetected = CGRectIntersectsRect(frame, targetSticker.frame);
+        
+        if (eventDetected == YES && [targetSticker.associatedEvents containsObject:event] == NO) {
+            
+            [targetSticker.associatedEvents addObject:event];
+            
+            if (self.delegate != nil && [self.delegate respondsToSelector:@selector(stickerView:eligibilityBeganFor:forSticker:)]) {
+                [self.delegate stickerView:self eligibilityBeganFor:event forSticker:targetSticker];
+            }
+        }
+        
+        else if (eventDetected == NO && [targetSticker.associatedEvents containsObject:event] == YES) {
+            [targetSticker.associatedEvents removeObject:event];
+            
+            if (self.delegate != nil && [self.delegate respondsToSelector:@selector(stickerView:eligibilityEndedFor:forSticker:)]) {
+                [self.delegate stickerView:self eligibilityEndedFor:event forSticker:targetSticker];
             }
         }
     }
@@ -171,6 +204,11 @@
 
 - (void)setFrame:(CGRect)frame forEvent:(NSString *)event {
     [_eventDictionary setObject:[NSValue valueWithCGRect:frame] forKey:event];
+}
+
+- (BOOL)frameIntersects:(CGRect)frame withFrameForEvent:(NSString *)event {
+    CGRect eventFrame = [_eventDictionary objectForKey:event].CGRectValue;
+    return CGRectIntersectsRect(frame, eventFrame);
 }
 
 - (void)removeFrameForEvent:(NSString *)event {
